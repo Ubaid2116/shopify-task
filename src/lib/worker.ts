@@ -124,22 +124,40 @@ async function processScanJob(job: Job<QueueJobData>) {
   if (job.data.type !== "scan") return;
 
   const { shopId, shopDomain } = job.data;
+  console.log(`[Worker] Starting scan for ${shopDomain} (shopId: ${shopId})`);
 
   const scanJob = await prisma.scanJob.findFirst({
     where: {
       shopId,
       status: { in: [JobStatus.QUEUED, JobStatus.PROCESSING] },
     },
+    orderBy: { createdAt: "desc" },
   });
 
   if (!scanJob) {
-    console.error(`No active scan job found for shop ${shopId}`);
+    console.error(`[Worker] No active scan job found for shop ${shopId}`);
     return;
   }
 
+  // Mark as PROCESSING
+  await prisma.scanJob.update({
+    where: { id: scanJob.id },
+    data: { status: JobStatus.PROCESSING },
+  });
+
   try {
+    console.log(`[Worker] Fetching products from ${shopDomain}...`);
     const products = await fetchAllProducts(shopDomain);
+    console.log(`[Worker] Found ${products.length} products with images`);
+
     let totalImages = 0;
+    const totalProductImages = products.reduce((sum, p) => sum + p.images.length, 0);
+
+    // Update total count upfront so progress bar shows correctly
+    await prisma.scanJob.update({
+      where: { id: scanJob.id },
+      data: { total: totalProductImages },
+    });
 
     for (const product of products) {
       for (const img of product.images) {
@@ -206,7 +224,7 @@ async function processScanJob(job: Job<QueueJobData>) {
 
         await prisma.scanJob.update({
           where: { id: scanJob.id },
-          data: { scanned: totalImages, total: totalImages },
+          data: { scanned: totalImages },
         });
       }
     }
@@ -222,11 +240,12 @@ async function processScanJob(job: Job<QueueJobData>) {
     });
 
     console.log(
-      `Scan completed for ${shopDomain}: ${products.length} products, ${totalImages} images`,
+      `[Worker] Scan completed for ${shopDomain}: ${products.length} products, ${totalImages} images`,
     );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Scan failed";
+    console.error(`[Worker] Scan failed for ${shopDomain}:`, error);
 
     await prisma.scanJob.update({
       where: { id: scanJob.id },
@@ -237,7 +256,6 @@ async function processScanJob(job: Job<QueueJobData>) {
       },
     });
 
-    console.error(`Scan failed for ${shopDomain}: ${message}`);
     throw error;
   }
 }

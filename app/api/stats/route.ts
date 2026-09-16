@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const activeScanJob = await prisma.scanJob.findFirst({
       where: {
         shopId,
-        status: { in: ["QUEUED", "PROCESSING"] },
+        status: { in: ["QUEUED", "PROCESSING", "FAILED"] },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
             status: activeScanJob.status,
             scanned: activeScanJob.scanned,
             total: activeScanJob.total,
+            error: activeScanJob.error,
           }
         : null,
       activeOptimizationJobs: activeJobs.length,

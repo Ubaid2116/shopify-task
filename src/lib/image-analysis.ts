@@ -51,10 +51,6 @@ export function detectFormat(
   url: string,
   contentType: string | null,
 ): string {
-  if (contentType && contentType !== "application/octet-stream") {
-    return contentType;
-  }
-
   const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
   switch (ext) {
     case "jpg":
@@ -70,9 +66,13 @@ export function detectFormat(
       return "image/gif";
     case "svg":
       return "image/svg+xml";
-    default:
-      return "image/jpeg";
   }
+
+  if (contentType && contentType !== "application/octet-stream") {
+    return contentType;
+  }
+
+  return "image/jpeg";
 }
 
 export function isOptimizedFormat(format: string): boolean {

@@ -47,12 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    await prisma.scanJob.create({
-      data: {
-        shopId: shop.id,
-        status: "QUEUED",
-      },
-    });
+    console.log(`Product updated for ${shopDomain} - scan will pick up new products on next manual scan`);
 
     return NextResponse.json({ received: true });
   } catch (error) {

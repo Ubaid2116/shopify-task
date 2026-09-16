@@ -209,15 +209,34 @@ export async function fetchAllProducts(shopDomain: string): Promise<ProductWithI
 
 export async function fetchImageFileSize(url: string): Promise<{ size: number | null; contentType: string | null }> {
   try {
-    const response = await fetch(url, { method: "HEAD" });
-    if (!response.ok) return { size: null, contentType: null };
+    // First try HEAD request
+    const headResponse = await fetch(url, {
+      method: "HEAD",
+      headers: { "Accept-Encoding": "identity" },
+    });
+    if (!headResponse.ok) return { size: null, contentType: null };
 
-    const contentLength = response.headers.get("content-length");
-    const contentType = response.headers.get("content-type");
+    const contentLength = headResponse.headers.get("content-length");
+    const contentType = headResponse.headers.get("content-type")?.split(";")[0] ?? null;
 
+    // If content-length looks reasonable, use it
+    if (contentLength) {
+      const size = parseInt(contentLength, 10);
+      if (size > 1024) {
+        return { size, contentType };
+      }
+    }
+
+    // HEAD gave no/lies about size - download to get real size
+    const getResponse = await fetch(url, {
+      headers: { "Accept-Encoding": "identity" },
+    });
+    if (!getResponse.ok) return { size: null, contentType };
+
+    const arrayBuffer = await getResponse.arrayBuffer();
     return {
-      size: contentLength ? parseInt(contentLength, 10) : null,
-      contentType: contentType?.split(";")[0] ?? null,
+      size: arrayBuffer.byteLength,
+      contentType: getResponse.headers.get("content-type")?.split(";")[0] ?? contentType,
     };
   } catch {
     return { size: null, contentType: null };

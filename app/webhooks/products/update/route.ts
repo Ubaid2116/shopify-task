@@ -19,58 +19,44 @@ function verifyShopifyHmac(body: string, hmacHeader: string): boolean {
   }
 }
 
-async function handleAppUninstalled(shopDomain: string) {
-  const shop = await prisma.shop.findUnique({
-    where: { shopDomain },
-  });
-
-  if (shop) {
-    await prisma.shop.update({
-      where: { id: shop.id },
-      data: { uninstalledAt: new Date() },
-    });
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const topic = request.headers.get("x-shopify-topic");
     const hmacHeader = request.headers.get("x-shopify-hmac-sha256");
     const shopDomain = request.headers.get("x-shopify-shop-domain");
+    const topic = request.headers.get("x-shopify-topic");
 
-    if (!hmacHeader || !shopDomain || !topic) {
-      return NextResponse.json(
-        { error: "Missing required headers" },
-        { status: 400 },
-      );
+    if (!hmacHeader || !shopDomain) {
+      return NextResponse.json({ error: "Missing headers" }, { status: 400 });
     }
 
     const body = await request.text();
 
     if (!verifyShopifyHmac(body, hmacHeader)) {
-      console.error(`Webhook HMAC verification failed for shop: ${shopDomain}`);
-      return NextResponse.json(
-        { error: "HMAC verification failed" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "HMAC failed" }, { status: 401 });
     }
 
     console.log(`Webhook received: ${topic} from ${shopDomain}`);
 
-    switch (topic) {
-      case "app/uninstalled":
-        await handleAppUninstalled(shopDomain);
-        break;
-      default:
-        console.log(`Unhandled webhook topic: ${topic}`);
+    const shop = await prisma.shop.findUnique({
+      where: { shopDomain },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      console.error(`Shop not found for webhook: ${shopDomain}`);
+      return NextResponse.json({ received: true });
     }
+
+    await prisma.scanJob.create({
+      data: {
+        shopId: shop.id,
+        status: "QUEUED",
+      },
+    });
 
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

@@ -326,6 +326,7 @@ export type ImageWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Image"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
   optimizationJobs?: Prisma.OptimizationJobListRelationFilter
+  optimizationResults?: Prisma.OptimizationResultListRelationFilter
 }
 
 export type ImageOrderByWithRelationInput = {
@@ -347,6 +348,7 @@ export type ImageOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   shop?: Prisma.ShopOrderByWithRelationInput
   optimizationJobs?: Prisma.OptimizationJobOrderByRelationAggregateInput
+  optimizationResults?: Prisma.OptimizationResultOrderByRelationAggregateInput
 }
 
 export type ImageWhereUniqueInput = Prisma.AtLeast<{
@@ -372,6 +374,7 @@ export type ImageWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Image"> | Date | string
   shop?: Prisma.XOR<Prisma.ShopScalarRelationFilter, Prisma.ShopWhereInput>
   optimizationJobs?: Prisma.OptimizationJobListRelationFilter
+  optimizationResults?: Prisma.OptimizationResultListRelationFilter
 }, "id" | "shopId_shopifyImageId">
 
 export type ImageOrderByWithAggregationInput = {
@@ -438,6 +441,7 @@ export type ImageCreateInput = {
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutImagesInput
   optimizationJobs?: Prisma.OptimizationJobCreateNestedManyWithoutImageInput
+  optimizationResults?: Prisma.OptimizationResultCreateNestedManyWithoutImageInput
 }
 
 export type ImageUncheckedCreateInput = {
@@ -458,6 +462,7 @@ export type ImageUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   optimizationJobs?: Prisma.OptimizationJobUncheckedCreateNestedManyWithoutImageInput
+  optimizationResults?: Prisma.OptimizationResultUncheckedCreateNestedManyWithoutImageInput
 }
 
 export type ImageUpdateInput = {
@@ -478,6 +483,7 @@ export type ImageUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutImagesNestedInput
   optimizationJobs?: Prisma.OptimizationJobUpdateManyWithoutImageNestedInput
+  optimizationResults?: Prisma.OptimizationResultUpdateManyWithoutImageNestedInput
 }
 
 export type ImageUncheckedUpdateInput = {
@@ -498,6 +504,7 @@ export type ImageUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optimizationJobs?: Prisma.OptimizationJobUncheckedUpdateManyWithoutImageNestedInput
+  optimizationResults?: Prisma.OptimizationResultUncheckedUpdateManyWithoutImageNestedInput
 }
 
 export type ImageCreateManyInput = {
@@ -735,6 +742,20 @@ export type ImageUpdateOneRequiredWithoutOptimizationJobsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ImageUpdateToOneWithWhereWithoutOptimizationJobsInput, Prisma.ImageUpdateWithoutOptimizationJobsInput>, Prisma.ImageUncheckedUpdateWithoutOptimizationJobsInput>
 }
 
+export type ImageCreateNestedOneWithoutOptimizationResultsInput = {
+  create?: Prisma.XOR<Prisma.ImageCreateWithoutOptimizationResultsInput, Prisma.ImageUncheckedCreateWithoutOptimizationResultsInput>
+  connectOrCreate?: Prisma.ImageCreateOrConnectWithoutOptimizationResultsInput
+  connect?: Prisma.ImageWhereUniqueInput
+}
+
+export type ImageUpdateOneRequiredWithoutOptimizationResultsNestedInput = {
+  create?: Prisma.XOR<Prisma.ImageCreateWithoutOptimizationResultsInput, Prisma.ImageUncheckedCreateWithoutOptimizationResultsInput>
+  connectOrCreate?: Prisma.ImageCreateOrConnectWithoutOptimizationResultsInput
+  upsert?: Prisma.ImageUpsertWithoutOptimizationResultsInput
+  connect?: Prisma.ImageWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ImageUpdateToOneWithWhereWithoutOptimizationResultsInput, Prisma.ImageUpdateWithoutOptimizationResultsInput>, Prisma.ImageUncheckedUpdateWithoutOptimizationResultsInput>
+}
+
 export type ImageCreateWithoutShopInput = {
   id?: string
   shopifyProductId: string
@@ -752,6 +773,7 @@ export type ImageCreateWithoutShopInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   optimizationJobs?: Prisma.OptimizationJobCreateNestedManyWithoutImageInput
+  optimizationResults?: Prisma.OptimizationResultCreateNestedManyWithoutImageInput
 }
 
 export type ImageUncheckedCreateWithoutShopInput = {
@@ -771,6 +793,7 @@ export type ImageUncheckedCreateWithoutShopInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   optimizationJobs?: Prisma.OptimizationJobUncheckedCreateNestedManyWithoutImageInput
+  optimizationResults?: Prisma.OptimizationResultUncheckedCreateNestedManyWithoutImageInput
 }
 
 export type ImageCreateOrConnectWithoutShopInput = {
@@ -838,6 +861,7 @@ export type ImageCreateWithoutOptimizationJobsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   shop: Prisma.ShopCreateNestedOneWithoutImagesInput
+  optimizationResults?: Prisma.OptimizationResultCreateNestedManyWithoutImageInput
 }
 
 export type ImageUncheckedCreateWithoutOptimizationJobsInput = {
@@ -857,6 +881,7 @@ export type ImageUncheckedCreateWithoutOptimizationJobsInput = {
   status: $Enums.ImageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  optimizationResults?: Prisma.OptimizationResultUncheckedCreateNestedManyWithoutImageInput
 }
 
 export type ImageCreateOrConnectWithoutOptimizationJobsInput = {
@@ -892,6 +917,7 @@ export type ImageUpdateWithoutOptimizationJobsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shop?: Prisma.ShopUpdateOneRequiredWithoutImagesNestedInput
+  optimizationResults?: Prisma.OptimizationResultUpdateManyWithoutImageNestedInput
 }
 
 export type ImageUncheckedUpdateWithoutOptimizationJobsInput = {
@@ -911,6 +937,103 @@ export type ImageUncheckedUpdateWithoutOptimizationJobsInput = {
   status?: Prisma.EnumImageStatusFieldUpdateOperationsInput | $Enums.ImageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  optimizationResults?: Prisma.OptimizationResultUncheckedUpdateManyWithoutImageNestedInput
+}
+
+export type ImageCreateWithoutOptimizationResultsInput = {
+  id?: string
+  shopifyProductId: string
+  shopifyImageId: string
+  productName: string
+  sourceUrl: string
+  width?: number | null
+  height?: number | null
+  format?: string | null
+  originalBytes?: bigint | number | null
+  estimatedOptimizedBytes?: bigint | number | null
+  potentialSavingsBytes?: bigint | number | null
+  reductionPercent?: number | null
+  status: $Enums.ImageStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  shop: Prisma.ShopCreateNestedOneWithoutImagesInput
+  optimizationJobs?: Prisma.OptimizationJobCreateNestedManyWithoutImageInput
+}
+
+export type ImageUncheckedCreateWithoutOptimizationResultsInput = {
+  id?: string
+  shopId: string
+  shopifyProductId: string
+  shopifyImageId: string
+  productName: string
+  sourceUrl: string
+  width?: number | null
+  height?: number | null
+  format?: string | null
+  originalBytes?: bigint | number | null
+  estimatedOptimizedBytes?: bigint | number | null
+  potentialSavingsBytes?: bigint | number | null
+  reductionPercent?: number | null
+  status: $Enums.ImageStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  optimizationJobs?: Prisma.OptimizationJobUncheckedCreateNestedManyWithoutImageInput
+}
+
+export type ImageCreateOrConnectWithoutOptimizationResultsInput = {
+  where: Prisma.ImageWhereUniqueInput
+  create: Prisma.XOR<Prisma.ImageCreateWithoutOptimizationResultsInput, Prisma.ImageUncheckedCreateWithoutOptimizationResultsInput>
+}
+
+export type ImageUpsertWithoutOptimizationResultsInput = {
+  update: Prisma.XOR<Prisma.ImageUpdateWithoutOptimizationResultsInput, Prisma.ImageUncheckedUpdateWithoutOptimizationResultsInput>
+  create: Prisma.XOR<Prisma.ImageCreateWithoutOptimizationResultsInput, Prisma.ImageUncheckedCreateWithoutOptimizationResultsInput>
+  where?: Prisma.ImageWhereInput
+}
+
+export type ImageUpdateToOneWithWhereWithoutOptimizationResultsInput = {
+  where?: Prisma.ImageWhereInput
+  data: Prisma.XOR<Prisma.ImageUpdateWithoutOptimizationResultsInput, Prisma.ImageUncheckedUpdateWithoutOptimizationResultsInput>
+}
+
+export type ImageUpdateWithoutOptimizationResultsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopifyProductId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopifyImageId?: Prisma.StringFieldUpdateOperationsInput | string
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  width?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  height?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  estimatedOptimizedBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  potentialSavingsBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  reductionPercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumImageStatusFieldUpdateOperationsInput | $Enums.ImageStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shop?: Prisma.ShopUpdateOneRequiredWithoutImagesNestedInput
+  optimizationJobs?: Prisma.OptimizationJobUpdateManyWithoutImageNestedInput
+}
+
+export type ImageUncheckedUpdateWithoutOptimizationResultsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  shopId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopifyProductId?: Prisma.StringFieldUpdateOperationsInput | string
+  shopifyImageId?: Prisma.StringFieldUpdateOperationsInput | string
+  productName?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  width?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  height?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  estimatedOptimizedBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  potentialSavingsBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  reductionPercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumImageStatusFieldUpdateOperationsInput | $Enums.ImageStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  optimizationJobs?: Prisma.OptimizationJobUncheckedUpdateManyWithoutImageNestedInput
 }
 
 export type ImageCreateManyShopInput = {
@@ -948,6 +1071,7 @@ export type ImageUpdateWithoutShopInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optimizationJobs?: Prisma.OptimizationJobUpdateManyWithoutImageNestedInput
+  optimizationResults?: Prisma.OptimizationResultUpdateManyWithoutImageNestedInput
 }
 
 export type ImageUncheckedUpdateWithoutShopInput = {
@@ -967,6 +1091,7 @@ export type ImageUncheckedUpdateWithoutShopInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optimizationJobs?: Prisma.OptimizationJobUncheckedUpdateManyWithoutImageNestedInput
+  optimizationResults?: Prisma.OptimizationResultUncheckedUpdateManyWithoutImageNestedInput
 }
 
 export type ImageUncheckedUpdateManyWithoutShopInput = {
@@ -994,10 +1119,12 @@ export type ImageUncheckedUpdateManyWithoutShopInput = {
 
 export type ImageCountOutputType = {
   optimizationJobs: number
+  optimizationResults: number
 }
 
 export type ImageCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   optimizationJobs?: boolean | ImageCountOutputTypeCountOptimizationJobsArgs
+  optimizationResults?: boolean | ImageCountOutputTypeCountOptimizationResultsArgs
 }
 
 /**
@@ -1015,6 +1142,13 @@ export type ImageCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
  */
 export type ImageCountOutputTypeCountOptimizationJobsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.OptimizationJobWhereInput
+}
+
+/**
+ * ImageCountOutputType without action
+ */
+export type ImageCountOutputTypeCountOptimizationResultsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OptimizationResultWhereInput
 }
 
 
@@ -1037,6 +1171,7 @@ export type ImageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   updatedAt?: boolean
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   optimizationJobs?: boolean | Prisma.Image$optimizationJobsArgs<ExtArgs>
+  optimizationResults?: boolean | Prisma.Image$optimizationResultsArgs<ExtArgs>
   _count?: boolean | Prisma.ImageCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["image"]>
 
@@ -1103,6 +1238,7 @@ export type ImageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
 export type ImageInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shop?: boolean | Prisma.ShopDefaultArgs<ExtArgs>
   optimizationJobs?: boolean | Prisma.Image$optimizationJobsArgs<ExtArgs>
+  optimizationResults?: boolean | Prisma.Image$optimizationResultsArgs<ExtArgs>
   _count?: boolean | Prisma.ImageCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ImageIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1117,6 +1253,7 @@ export type $ImagePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   objects: {
     shop: Prisma.$ShopPayload<ExtArgs>
     optimizationJobs: Prisma.$OptimizationJobPayload<ExtArgs>[]
+    optimizationResults: Prisma.$OptimizationResultPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1531,6 +1668,7 @@ export interface Prisma__ImageClient<T, Null = never, ExtArgs extends runtime.Ty
   readonly [Symbol.toStringTag]: "PrismaPromise"
   shop<T extends Prisma.ShopDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ShopDefaultArgs<ExtArgs>>): Prisma.Prisma__ShopClient<runtime.Types.Result.GetResult<Prisma.$ShopPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   optimizationJobs<T extends Prisma.Image$optimizationJobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Image$optimizationJobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OptimizationJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  optimizationResults<T extends Prisma.Image$optimizationResultsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Image$optimizationResultsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OptimizationResultPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1998,6 +2136,30 @@ export type Image$optimizationJobsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.OptimizationJobScalarFieldEnum | Prisma.OptimizationJobScalarFieldEnum[]
+}
+
+/**
+ * Image.optimizationResults
+ */
+export type Image$optimizationResultsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OptimizationResult
+   */
+  select?: Prisma.OptimizationResultSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OptimizationResult
+   */
+  omit?: Prisma.OptimizationResultOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OptimizationResultInclude<ExtArgs> | null
+  where?: Prisma.OptimizationResultWhereInput
+  orderBy?: Prisma.OptimizationResultOrderByWithRelationInput | Prisma.OptimizationResultOrderByWithRelationInput[]
+  cursor?: Prisma.OptimizationResultWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OptimizationResultScalarFieldEnum | Prisma.OptimizationResultScalarFieldEnum[]
 }
 
 /**

@@ -29,7 +29,10 @@ type Stats = {
   optimized: number;
   recommended: number;
   highPriority: number;
+  failed: number;
   totalSavingsBytes: number;
+  activeScanJob: { id: string; status: string; scanned: number; total: number } | null;
+  activeOptimizationJobs: number;
 };
 
 function getIdTokenFromUrl(): string | null {
@@ -45,29 +48,24 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
 }
 
-function getStatusColor(status: string): string {
+function getStatusBadge(status: string) {
   switch (status) {
-    case "OPTIMIZED": return "#108043";
-    case "RECOMMENDED": return "#B98900";
-    case "HIGH_PRIORITY": return "#D72C0D";
-    case "FAILED": return "#D72C0D";
-    default: return "#6D7175";
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "OPTIMIZED": return "Optimized";
-    case "RECOMMENDED": return "Recommended";
-    case "HIGH_PRIORITY": return "High Priority";
-    case "FAILED": return "Failed";
-    default: return status;
+    case "OPTIMIZED":
+      return { className: "polaris-badge-success", label: "Optimized" };
+    case "RECOMMENDED":
+      return { className: "polaris-badge-info", label: "Recommended" };
+    case "HIGH_PRIORITY":
+      return { className: "polaris-badge-warning", label: "High Priority" };
+    case "FAILED":
+      return { className: "polaris-badge-critical", label: "Failed" };
+    default:
+      return { className: "polaris-badge-neutral", label: status };
   }
 }
 
 export default function Home() {
   const [shop, setShop] = useState<string | null>(null);
-  const [authStatus, setAuthStatus] = useState("Starting authentication...");
+  const [authStatus, setAuthStatus] = useState("Connecting to your store...");
   const [stats, setStats] = useState<Stats | null>(null);
   const [images, setImages] = useState<ImageData[]>([]);
   const [totalImages, setTotalImages] = useState(0);
@@ -77,7 +75,8 @@ export default function Home() {
   const [scanning, setScanning] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
-  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchStats = useCallback(async (shopDomain: string) => {
     try {
@@ -93,10 +92,11 @@ export default function Home() {
     }
   }, []);
 
-  const fetchImages = useCallback(async (shopDomain: string, page: number, status: string) => {
+  const fetchImages = useCallback(async (shopDomain: string, page: number, status: string, search: string) => {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: "10" });
       if (status !== "ALL") params.set("status", status);
+      if (search) params.set("search", search);
       const res = await fetch(`/api/images?${params}`, {
         headers: { "x-shop-domain": shopDomain },
       });
@@ -147,7 +147,7 @@ export default function Home() {
         setShop(data.shop);
         setAuthStatus(`Connected to ${data.shop}`);
         await fetchStats(data.shop);
-        await fetchImages(data.shop, 1, "ALL");
+        await fetchImages(data.shop, 1, "ALL", "");
       } catch (error) {
         setAuthStatus(error instanceof Error ? error.message : "Auth failed");
       }
@@ -157,9 +157,15 @@ export default function Home() {
 
   useEffect(() => {
     if (shop) {
-      fetchImages(shop, currentPage, filter);
+      fetchImages(shop, currentPage, filter, searchQuery);
     }
-  }, [shop, currentPage, filter, fetchImages]);
+  }, [shop, currentPage, filter, searchQuery, fetchImages]);
+
+  useEffect(() => {
+    if (!shop) return;
+    const interval = setInterval(() => fetchStats(shop), 5000);
+    return () => clearInterval(interval);
+  }, [shop, fetchStats]);
 
   async function handleScan() {
     if (!shop || scanning) return;
@@ -172,14 +178,13 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
-        setScanResult(`Scanned ${data.productsFound} products, ${data.imagesFound} images found`);
+        setScanResult({ type: "success", message: data.message || "Scan queued for processing" });
         await fetchStats(shop);
-        await fetchImages(shop, 1, filter);
       } else {
-        setScanResult(`Error: ${data.error}`);
+        setScanResult({ type: "error", message: data.error || "Scan failed" });
       }
-    } catch (e) {
-      setScanResult("Scan failed");
+    } catch {
+      setScanResult({ type: "error", message: "Scan failed. Please try again." });
     }
     setScanning(false);
   }
@@ -198,12 +203,12 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
-        setScanResult(`Enqueued ${data.enqueued} images for optimization`);
+        setScanResult({ type: "success", message: `${data.enqueued} images queued for optimization` });
         setSelectedIds(new Set());
         await fetchStats(shop);
       }
-    } catch (e) {
-      setScanResult("Optimization failed");
+    } catch {
+      setScanResult({ type: "error", message: "Optimization failed" });
     }
     setOptimizing(false);
   }
@@ -223,14 +228,14 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
-        setScanResult(`Optimized! Saved ${formatBytes(data.savingsBytes)} (${data.reductionPercent}% reduction)`);
+        setScanResult({ type: "success", message: `Saved ${formatBytes(data.savingsBytes)} (${data.reductionPercent}% reduction)` });
         await fetchStats(shop);
-        await fetchImages(shop, currentPage, filter);
+        await fetchImages(shop, currentPage, filter, searchQuery);
       } else {
-        setScanResult(`Error: ${data.error}`);
+        setScanResult({ type: "error", message: data.error || "Optimization failed" });
       }
     } catch {
-      setScanResult("Optimization failed");
+      setScanResult({ type: "error", message: "Optimization failed" });
     }
     setOptimizingId(null);
   }
@@ -254,52 +259,43 @@ export default function Home() {
 
   if (!shop) {
     return (
-      <main style={{ padding: "40px", fontFamily: "system-ui, sans-serif" }}>
-        <div style={{ maxWidth: 600, margin: "100px auto", textAlign: "center" }}>
-          <h1 style={{ fontSize: 24, marginBottom: 12 }}>StoreBoost Pro</h1>
-          <p style={{ color: "#6D7175" }}>{authStatus}</p>
+      <div className="dashboard">
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: 16 }}>
+          <div className="spinner spinner-dark" style={{ width: 32, height: 32 }} />
+          <p style={{ color: "#6D7175", fontSize: 14 }}>{authStatus}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
+  const needsOptimization = (stats?.recommended ?? 0) + (stats?.highPriority ?? 0);
+  const scanProgress = stats?.activeScanJob
+    ? Math.round((stats.activeScanJob.scanned / Math.max(stats.activeScanJob.total, 1)) * 100)
+    : 0;
+
   return (
-    <main style={{ padding: "24px", fontFamily: "system-ui, sans-serif", maxWidth: 1200, margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+    <div className="dashboard">
+      <header className="dashboard-header">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>StoreBoost Pro</h1>
-          <p style={{ color: "#6D7175", margin: "4px 0 0" }}>Optimize your Shopify store images</p>
+          <h1>StoreBoost Pro</h1>
+          <p>Optimize your store&apos;s images for better performance</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
+            className={`polaris-button ${scanning ? "polaris-button-outline" : "polaris-button-primary"}`}
             onClick={handleScan}
             disabled={scanning}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: scanning ? "#E1E3E5" : "#006FBB",
-              color: scanning ? "#6D7175" : "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: scanning ? "not-allowed" : "pointer",
-              fontWeight: 500,
-            }}
           >
+            {scanning && <span className="spinner" />}
             {scanning ? "Scanning..." : "Scan Store"}
           </button>
           {selectedIds.size > 0 && (
             <button
+              className={`polaris-button ${optimizing ? "polaris-button-outline" : "polaris-button-success"}`}
               onClick={handleOptimizeSelected}
               disabled={optimizing}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: optimizing ? "#E1E3E5" : "#008060",
-                color: optimizing ? "#6D7175" : "#fff",
-                border: "none",
-                borderRadius: 4,
-                cursor: optimizing ? "not-allowed" : "pointer",
-                fontWeight: 500,
-              }}
             >
+              {optimizing && <span className="spinner" />}
               {optimizing ? "Optimizing..." : `Optimize Selected (${selectedIds.size})`}
             </button>
           )}
@@ -307,160 +303,188 @@ export default function Home() {
       </header>
 
       {scanResult && (
-        <div style={{ padding: "12px 16px", marginBottom: 16, backgroundColor: scanResult.startsWith("Error") || scanResult.startsWith("Scan failed") ? "#FFF4F4" : "#F0F9FF", border: `1px solid ${scanResult.startsWith("Error") || scanResult.startsWith("Scan failed") ? "#FCBCB2" : "#B3D4FF"}`, borderRadius: 6, color: scanResult.startsWith("Error") || scanResult.startsWith("Scan failed") ? "#D72C0D" : "#006FBB" }}>
-          {scanResult}
+        <div className={`alert ${scanResult.type === "error" ? "alert-error" : "alert-success"}`}>
+          {scanResult.type === "error" ? "✕" : "✓"} {scanResult.message}
         </div>
       )}
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+      {stats?.activeScanJob && (
+        <div className="alert alert-info">
+          <span className="spinner spinner-dark" />
+          Scanning: {stats.activeScanJob.scanned} / {stats.activeScanJob.total} images ({scanProgress}%)
+        </div>
+      )}
+
+      {stats && stats.activeOptimizationJobs > 0 && (
+        <div className="alert alert-info">
+          <span className="spinner spinner-dark" />
+          {stats.activeOptimizationJobs} image(s) being optimized in background...
+        </div>
+      )}
+
+      <section className="stats-grid">
         {[
-          { label: "Total Images", value: stats?.totalImages ?? 0, color: "#006FBB" },
-          { label: "Optimized", value: stats?.optimized ?? 0, color: "#108043" },
-          { label: "Needs Optimization", value: (stats?.recommended ?? 0) + (stats?.highPriority ?? 0), color: "#B98900" },
-          { label: "Potential Savings", value: formatBytes(stats?.totalSavingsBytes ?? 0), color: "#D72C0D" },
+          { label: "Total Images", value: stats?.totalImages ?? 0, color: "#006fbb" },
+          { label: "Optimized", value: stats?.optimized ?? 0, color: "#008060" },
+          { label: "Needs Optimization", value: needsOptimization, color: "#b98900" },
+          { label: "Potential Savings", value: formatBytes(stats?.totalSavingsBytes ?? 0), color: "#d72c0d" },
         ].map((card) => (
-          <div key={card.label} style={{ padding: 20, backgroundColor: "#fff", border: "1px solid #E1E3E5", borderRadius: 8 }}>
-            <div style={{ color: "#6D7175", fontSize: 13, marginBottom: 4 }}>{card.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: card.color }}>{card.value}</div>
+          <div key={card.label} className="polaris-card stat-card">
+            <span className="stat-label">{card.label}</span>
+            <div className="stat-value" style={{ color: card.color }}>{card.value}</div>
           </div>
         ))}
       </section>
 
-      <section style={{ backgroundColor: "#fff", border: "1px solid #E1E3E5", borderRadius: 8 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #E1E3E5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Product Images</h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["ALL", "OPTIMIZED", "RECOMMENDED", "HIGH_PRIORITY"].map((f) => (
-              <button
-                key={f}
-                onClick={() => { setFilter(f); setCurrentPage(1); }}
-                style={{
-                  padding: "4px 12px",
-                  fontSize: 13,
-                  backgroundColor: filter === f ? "#006FBB" : "#F4F6F8",
-                  color: filter === f ? "#fff" : "#374151",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                }}
-              >
-                {f === "ALL" ? "All" : f === "HIGH_PRIORITY" ? "High Priority" : f.charAt(0) + f.slice(1).toLowerCase()}
-              </button>
-            ))}
+      <div className="polaris-card">
+        <div className="section-header">
+          <h2>Product Images</h2>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <input
+              type="text"
+              className="polaris-textfield"
+              placeholder="Search images..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              style={{ width: 200 }}
+            />
+            <div className="filter-group">
+              {[
+                { key: "ALL", label: "All" },
+                { key: "OPTIMIZED", label: "Optimized" },
+                { key: "RECOMMENDED", label: "Recommended" },
+                { key: "HIGH_PRIORITY", label: "High Priority" },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  className={`filter-button ${filter === f.key ? "filter-button-active" : ""}`}
+                  onClick={() => { setFilter(f.key); setCurrentPage(1); }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#F4F6F8", textAlign: "left" }}>
-              <th style={{ padding: "10px 16px", width: 40 }}>
-                <input type="checkbox" checked={selectedIds.size === images.length && images.length > 0} onChange={toggleSelectAll} />
-              </th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Image</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Product</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Dimensions</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Format</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Size</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Est. Savings</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Status</th>
-              <th style={{ padding: "10px 12px", fontSize: 13, color: "#6D7175" }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {images.length === 0 ? (
+        {images.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📷</div>
+            <h3>No images found</h3>
+            <p>Click &quot;Scan Store&quot; to analyze your product images</p>
+            <button
+              className={`polaris-button ${scanning ? "polaris-button-outline" : "polaris-button-primary"}`}
+              onClick={handleScan}
+              disabled={scanning}
+            >
+              {scanning && <span className="spinner" />}
+              {scanning ? "Scanning..." : "Scan Store"}
+            </button>
+          </div>
+        ) : (
+          <table className="polaris-table">
+            <thead>
               <tr>
-                <td colSpan={9} style={{ padding: 40, textAlign: "center", color: "#6D7175" }}>
-                  No images found. Click &quot;Scan Store&quot; to get started.
-                </td>
+                <th style={{ width: 44, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === images.length && images.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th>Image</th>
+                <th>Product</th>
+                <th>Size</th>
+                <th>Format</th>
+                <th>Est. Savings</th>
+                <th>Status</th>
+                <th style={{ textAlign: "right" }}>Action</th>
               </tr>
-            ) : (
-              images.map((img) => (
-                <tr key={img.id} style={{ borderTop: "1px solid #E1E3E5" }}>
-                  <td style={{ padding: "10px 16px" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(img.id)}
-                      onChange={() => toggleSelect(img.id)}
-                    />
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <img
-                      src={img.sourceUrl}
-                      alt={img.productName}
-                      style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 4 }}
-                    />
-                  </td>
-                  <td style={{ padding: "10px 12px", fontSize: 14, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{img.productName}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 14, color: "#6D7175" }}>{img.width && img.height ? `${img.width}x${img.height}` : "N/A"}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 14, color: "#6D7175" }}>{img.format?.replace("image/", "").toUpperCase() ?? "N/A"}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 14 }}>{formatBytes(img.originalBytes)}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 14, color: "#D72C0D" }}>
-                    {img.potentialSavingsBytes ? (
-                      <span>{formatBytes(img.potentialSavingsBytes)} ({img.reductionPercent}%)</span>
-                    ) : "N/A"}
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "2px 8px",
-                      fontSize: 12,
-                      borderRadius: 12,
-                      backgroundColor: getStatusColor(img.status) + "15",
-                      color: getStatusColor(img.status),
-                      fontWeight: 500,
-                    }}>
-                      {getStatusLabel(img.status)}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    {img.status !== "OPTIMIZED" && (
-                      <button
-                        onClick={() => handleOptimizeSingle(img.id)}
-                        disabled={optimizingId === img.id}
-                        style={{
-                          padding: "4px 12px",
-                          fontSize: 12,
-                          backgroundColor: optimizingId === img.id ? "#E1E3E5" : "#008060",
-                          color: optimizingId === img.id ? "#6D7175" : "#fff",
-                          border: "none",
-                          borderRadius: 4,
-                          cursor: optimizingId === img.id ? "not-allowed" : "pointer",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {optimizingId === img.id ? "Optimizing..." : "Optimize"}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {images.map((img) => {
+                const badge = getStatusBadge(img.status);
+                return (
+                  <tr key={img.id}>
+                    <td style={{ textAlign: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(img.id)}
+                        onChange={() => toggleSelect(img.id)}
+                      />
+                    </td>
+                    <td>
+                      <img
+                        src={img.sourceUrl}
+                        alt={img.productName}
+                        style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid #e1e3e5" }}
+                      />
+                    </td>
+                    <td style={{ fontWeight: 500, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {img.productName}
+                    </td>
+                    <td style={{ color: "#374151" }}>{formatBytes(img.originalBytes)}</td>
+                    <td>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6d7175", backgroundColor: "#f4f6f8", padding: "2px 6px", borderRadius: 4 }}>
+                        {img.format?.replace("image/", "").toUpperCase() ?? "N/A"}
+                      </span>
+                    </td>
+                    <td style={{ color: img.potentialSavingsBytes ? "#d72c0d" : "#6d7175", fontWeight: img.potentialSavingsBytes ? 600 : 400 }}>
+                      {img.potentialSavingsBytes
+                        ? `${formatBytes(img.potentialSavingsBytes)} (${img.reductionPercent}%)`
+                        : "—"}
+                    </td>
+                    <td>
+                      <span className={`polaris-badge ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {img.status !== "OPTIMIZED" && (
+                        <button
+                          className={`polaris-button ${optimizingId === img.id ? "polaris-button-outline" : "polaris-button-success"}`}
+                          onClick={() => handleOptimizeSingle(img.id)}
+                          disabled={optimizingId === img.id}
+                          style={{ padding: "4px 12px", fontSize: 12 }}
+                        >
+                          {optimizingId === img.id && <span className="spinner" />}
+                          {optimizingId === img.id ? "Working..." : "Optimize"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
 
         {totalImages > 10 && (
-          <div style={{ padding: "12px 20px", borderTop: "1px solid #E1E3E5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 13, color: "#6D7175" }}>
-              Showing {(currentPage - 1) * 10 + 1}-{Math.min(currentPage * 10, totalImages)} of {totalImages}
+          <div className="pagination">
+            <span className="pagination-info">
+              Showing {(currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, totalImages)} of {totalImages}
             </span>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="pagination-buttons">
               <button
+                className="polaris-button polaris-button-outline"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                style={{ padding: "4px 12px", fontSize: 13, border: "1px solid #E1E3E5", borderRadius: 4, cursor: currentPage === 1 ? "not-allowed" : "pointer", backgroundColor: "#fff" }}
+                style={{ padding: "4px 12px", fontSize: 13 }}
               >
-                Previous
+                ← Previous
               </button>
               <button
+                className="polaris-button polaris-button-outline"
                 onClick={() => setCurrentPage((p) => p + 1)}
                 disabled={currentPage * 10 >= totalImages}
-                style={{ padding: "4px 12px", fontSize: 13, border: "1px solid #E1E3E5", borderRadius: 4, cursor: currentPage * 10 >= totalImages ? "not-allowed" : "pointer", backgroundColor: "#fff" }}
+                style={{ padding: "4px 12px", fontSize: 13 }}
               >
-                Next
+                Next →
               </button>
             </div>
           </div>
         )}
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

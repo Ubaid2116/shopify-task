@@ -1,38 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { fetchAllProducts, fetchImageFileSize } from "@/src/lib/shopify-api";
-import {
-  detectFormat,
-  classifyImage,
-  estimateOptimizedSize,
-} from "@/src/lib/image-analysis";
+import { authenticateApiRequest } from "@/src/lib/auth-middleware";
+import { createQueue } from "@/src/lib/queue";
 import { JobStatus } from "@/src/generated/prisma/enums";
+
+const queue = createQueue();
 
 export async function POST(request: NextRequest) {
   try {
-    const shopDomain = request.headers.get("x-shop-domain");
-
-    if (!shopDomain) {
-      return NextResponse.json(
-        { error: "Missing x-shop-domain header" },
-        { status: 400 },
-      );
+    const auth = await authenticateApiRequest(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const shop = await prisma.shop.findUnique({
-      where: { shopDomain },
-    });
-
-    if (!shop || shop.uninstalledAt) {
-      return NextResponse.json(
-        { error: "Shop not found or uninstalled" },
-        { status: 401 },
-      );
-    }
+    const { shopDomain, shopId } = auth;
 
     const existingJob = await prisma.scanJob.findFirst({
       where: {
-        shopId: shop.id,
+        shopId,
         status: { in: [JobStatus.QUEUED, JobStatus.PROCESSING] },
       },
     });
@@ -46,99 +31,28 @@ export async function POST(request: NextRequest) {
 
     const scanJob = await prisma.scanJob.create({
       data: {
-        shopId: shop.id,
-        status: JobStatus.PROCESSING,
+        shopId,
+        status: JobStatus.QUEUED,
         startedAt: new Date(),
       },
     });
 
-    const products = await fetchAllProducts(shopDomain);
-
-    let totalImages = 0;
-
-    for (const product of products) {
-      for (const img of product.images) {
-        totalImages++;
-
-        const { size, contentType } = await fetchImageFileSize(img.url);
-        const format = detectFormat(img.url, contentType);
-        const status = classifyImage(format, size);
-        const { estimatedBytes, savingsBytes, reductionPercent } =
-          estimateOptimizedSize(format, size);
-
-        const existingImage = await prisma.image.findUnique({
-          where: {
-            shopId_shopifyImageId: {
-              shopId: shop.id,
-              shopifyImageId: img.shopifyImageId,
-            },
-          },
-          select: { status: true },
-        });
-
-        const newStatus = existingImage?.status === "OPTIMIZED" ? "OPTIMIZED" : status;
-
-        await prisma.image.upsert({
-          where: {
-            shopId_shopifyImageId: {
-              shopId: shop.id,
-              shopifyImageId: img.shopifyImageId,
-            },
-          },
-          create: {
-            shopId: shop.id,
-            shopifyProductId: product.shopifyProductId,
-            shopifyImageId: img.shopifyImageId,
-            productName: product.title,
-            sourceUrl: img.url,
-            width: img.width,
-            height: img.height,
-            format,
-            originalBytes: size ? BigInt(size) : null,
-            estimatedOptimizedBytes: estimatedBytes
-              ? BigInt(estimatedBytes)
-              : null,
-            potentialSavingsBytes: savingsBytes ? BigInt(savingsBytes) : null,
-            reductionPercent,
-            status,
-          },
-          update: {
-            productName: product.title,
-            sourceUrl: img.url,
-            width: img.width,
-            height: img.height,
-            format,
-            originalBytes: size ? BigInt(size) : null,
-            estimatedOptimizedBytes: estimatedBytes
-              ? BigInt(estimatedBytes)
-              : null,
-            potentialSavingsBytes: savingsBytes ? BigInt(savingsBytes) : null,
-            reductionPercent,
-            status: newStatus,
-          },
-        });
-
-        await prisma.scanJob.update({
-          where: { id: scanJob.id },
-          data: { scanned: totalImages, total: totalImages },
-        });
-      }
-    }
-
-    await prisma.scanJob.update({
-      where: { id: scanJob.id },
-      data: {
-        status: JobStatus.COMPLETED,
-        scanned: totalImages,
-        total: totalImages,
-        completedAt: new Date(),
+    await queue.add(
+      "scan",
+      {
+        type: "scan",
+        shopId,
+        shopDomain,
       },
-    });
+      {
+        jobId: `scan-${shopId}-${scanJob.id}`,
+      },
+    );
 
     return NextResponse.json({
       scanJobId: scanJob.id,
-      productsFound: products.length,
-      imagesFound: totalImages,
+      status: "queued",
+      message: "Scan queued for background processing",
     });
   } catch (error) {
     console.error("Scan error:", error);

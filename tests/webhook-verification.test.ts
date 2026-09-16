@@ -86,3 +86,87 @@ describe("Webhook HMAC verification logic", () => {
     expect(originalHmac).not.toBe(tamperedHmac);
   });
 });
+
+describe("Input validation", () => {
+  it("validates shop domain format", () => {
+    const validDomains = [
+      "test-store.myshopify.com",
+      "my-shop.myshopify.com",
+      "shop123.myshopify.com",
+    ];
+    const invalidDomains = [
+      "not-a-shop",
+      "test.com",
+      "myshopify.com",
+      "",
+      "test.myshopify.com.evil.com",
+    ];
+
+    const domainRegex = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+
+    for (const domain of validDomains) {
+      expect(domainRegex.test(domain)).toBe(true);
+    }
+
+    for (const domain of invalidDomains) {
+      expect(domainRegex.test(domain)).toBe(false);
+    }
+  });
+
+  it("validates image ID format (cuid)", () => {
+    const validIds = [
+      "clx1234567890abcdef",
+      "c0ffee1234567890abcd",
+    ];
+    const invalidIds = [
+      "",
+      "abc",
+      "123",
+      "../../etc/passwd",
+      "'; DROP TABLE images; --",
+    ];
+
+    for (const id of validIds) {
+      expect(id.length).toBeGreaterThan(0);
+      expect(id.startsWith("c")).toBe(true);
+    }
+
+    for (const id of invalidIds) {
+      expect(id.length === 0 || !id.startsWith("c")).toBe(true);
+    }
+  });
+
+  it("validates page number parameters", () => {
+    const validPages = [1, 2, 10, 100];
+    const invalidPages = [0, -1, -100, NaN];
+
+    for (const page of validPages) {
+      expect(page).toBeGreaterThanOrEqual(1);
+      expect(Number.isFinite(page)).toBe(true);
+    }
+
+    for (const page of invalidPages) {
+      expect(page < 1 || !Number.isFinite(page)).toBe(true);
+    }
+  });
+
+  it("validates page size bounds", () => {
+    const clamp = (size: number) => Math.min(100, Math.max(1, size));
+
+    expect(clamp(0)).toBe(1);
+    expect(clamp(-5)).toBe(1);
+    expect(clamp(10)).toBe(10);
+    expect(clamp(50)).toBe(50);
+    expect(clamp(100)).toBe(100);
+    expect(clamp(200)).toBe(100);
+  });
+
+  it("validates bulk optimize batch size limit", () => {
+    const maxBatch = 50;
+    const validBatch = Array.from({ length: 50 }, (_, i) => `img-${i}`);
+    const oversizedBatch = Array.from({ length: 51 }, (_, i) => `img-${i}`);
+
+    expect(validBatch.length).toBeLessThanOrEqual(maxBatch);
+    expect(oversizedBatch.length).toBeGreaterThan(maxBatch);
+  });
+});

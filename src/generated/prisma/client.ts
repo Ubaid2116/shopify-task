@@ -61,3 +61,8 @@ export type ScanJob = Prisma.ScanJobModel
  * 
  */
 export type OptimizationJob = Prisma.OptimizationJobModel
+/**
+ * Model OptimizationResult
+ * 
+ */
+export type OptimizationResult = Prisma.OptimizationResultModel

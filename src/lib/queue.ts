@@ -15,13 +15,7 @@ export type OptimizeJobData = {
   imageId: string;
 };
 
-export type BulkOptimizeJobData = {
-  type: "bulk-optimize";
-  shopId: string;
-  imageIds: string[];
-};
-
-export type QueueJobData = ScanJobData | OptimizeJobData | BulkOptimizeJobData;
+export type QueueJobData = ScanJobData | OptimizeJobData;
 
 const defaultJobOptions: Partial<JobsOptions> = {
   attempts: 3,

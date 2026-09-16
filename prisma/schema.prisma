@@ -36,6 +36,7 @@ model Shop {
   images               Image[]
   scanJobs             ScanJob[]
   optimizationJobs    OptimizationJob[]
+  optimizationResults  OptimizationResult[]
 }
 
 model Image {
@@ -64,6 +65,7 @@ model Image {
   updatedAt DateTime @updatedAt
 
   optimizationJobs OptimizationJob[]
+  optimizationResults OptimizationResult[]
 
   @@unique([shopId, shopifyImageId])
   @@index([shopId])
@@ -111,6 +113,31 @@ model OptimizationJob {
   startedAt   DateTime?
   completedAt DateTime?
 
+  results OptimizationResult[]
+
   @@unique([shopId, imageId])
   @@index([shopId, status])
+}
+
+model OptimizationResult {
+  id             String @id @default(cuid())
+  shopId         String
+  imageId        String
+  optimizationJobId String
+
+  shop             Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  image            Image            @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  optimizationJob  OptimizationJob  @relation(fields: [optimizationJobId], references: [id], onDelete: Cascade)
+
+  originalBytes    BigInt
+  optimizedBytes   BigInt
+  savingsBytes     BigInt
+  reductionPercent Float
+  outputFormat     String
+  optimizedPath    String
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId])
+  @@index([imageId])
 }

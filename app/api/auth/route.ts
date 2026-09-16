@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
     ? sanitizedShop
     : `${sanitizedShop}.myshopify.com`;
 
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shopDomain)) {
+    return NextResponse.json({ error: "Invalid shop domain" }, { status: 400 });
+  }
+
   const nonce = generateNonce();
   const redirectUri = `${process.env.SHOPIFY_APP_URL}/api/auth/callback`;
   const baseUrl = `https://${shopDomain}`;

@@ -1,6 +1,21 @@
 import { ImageStatus } from "../generated/prisma/enums";
 
 const OPTIMIZED_FORMATS = ["image/webp", "image/avif"];
+
+/**
+ * Compression ratio estimates based on industry benchmarks and Sharp library documentation.
+ * These are conservative estimates for initial display purposes.
+ *
+ * Methodology:
+ * - JPEG: 65% of original size (mozjpeg at quality 80 typically achieves 30-50% reduction)
+ * - PNG: 50% of original size (optipng/pngquant at level 8 typically achieves 40-60% reduction)
+ * - BMP/TIFF: 35-40% (these formats are rarely optimized, significant gains expected)
+ * - Default: 65% for unknown formats (conservative estimate)
+ *
+ * IMPORTANT: These are ESTIMATES only. Actual savings depend on image content, complexity,
+ * and color palette. For accurate sizing, process a temporary copy of the image.
+ * The "estimated" prefix in field names indicates these values are calculated, not measured.
+ */
 const COMPRESSION_ESTIMATES: Record<string, number> = {
   "image/jpeg": 0.65,
   "image/jpg": 0.65,
@@ -9,9 +24,27 @@ const COMPRESSION_ESTIMATES: Record<string, number> = {
   "image/tiff": 0.4,
 };
 
+/**
+ * Classification thresholds for image optimization status:
+ *
+ * OPTIMIZED:
+ *   - Already in modern format (WebP/AVIF), OR
+ *   - File size <= 200KB (small enough that optimization收益 is minimal)
+ *
+ * RECOMMENDED:
+ *   - File size between 200KB and 1MB
+ *   - Optimization would provide noticeable performance benefit
+ *
+ * HIGH_PRIORITY:
+ *   - File size > 1MB
+ *   - Significant performance impact, should be optimized urgently
+ *
+ * FAILED:
+ *   - Processing failed (download error, unsupported format, etc.)
+ */
 const THRESHOLDS = {
-  OPTIMIZED_MAX_BYTES: 200 * 1024,
-  RECOMMENDED_MAX_BYTES: 1024 * 1024,
+  OPTIMIZED_MAX_BYTES: 200 * 1024,    // 200KB
+  RECOMMENDED_MAX_BYTES: 1024 * 1024, // 1MB
 };
 
 export function detectFormat(

@@ -1,40 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { authenticateApiRequest } from "@/src/lib/auth-middleware";
 import { ImageStatus } from "@/src/generated/prisma/enums";
 
 export async function GET(request: NextRequest) {
   try {
-    const shopDomain = request.headers.get("x-shop-domain");
+    const auth = await authenticateApiRequest(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const { shopId } = auth;
     const status = request.nextUrl.searchParams.get("status");
-    const page = parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10);
-    const pageSize = parseInt(
-      request.nextUrl.searchParams.get("pageSize") ?? "20",
-      10,
-    );
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("pageSize") ?? "20", 10)));
     const search = request.nextUrl.searchParams.get("search") ?? "";
 
-    if (!shopDomain) {
-      return NextResponse.json(
-        { error: "Missing x-shop-domain header" },
-        { status: 400 },
-      );
-    }
-
-    const shop = await prisma.shop.findUnique({
-      where: { shopDomain },
-    });
-
-    if (!shop) {
-      return NextResponse.json(
-        { error: "Shop not found" },
-        { status: 401 },
-      );
-    }
-
-    const where: Record<string, unknown> = { shopId: shop.id };
+    const where: Record<string, unknown> = { shopId };
 
     if (status && status !== "ALL") {
-      where.status = status as ImageStatus;
+      if (["OPTIMIZED", "RECOMMENDED", "HIGH_PRIORITY", "FAILED"].includes(status)) {
+        where.status = status as ImageStatus;
+      }
     }
 
     if (search) {

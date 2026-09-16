@@ -1,47 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { authenticateApiRequest } from "@/src/lib/auth-middleware";
 import { ImageStatus } from "@/src/generated/prisma/enums";
 
 export async function GET(request: NextRequest) {
   try {
-    const shopDomain = request.headers.get("x-shop-domain");
-
-    if (!shopDomain) {
-      return NextResponse.json(
-        { error: "Missing x-shop-domain header" },
-        { status: 400 },
-      );
+    const auth = await authenticateApiRequest(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const shop = await prisma.shop.findUnique({
-      where: { shopDomain },
-    });
+    const { shopId } = auth;
 
-    if (!shop) {
-      return NextResponse.json(
-        { error: "Shop not found" },
-        { status: 401 },
-      );
-    }
-
-    const [totalImages, optimized, recommended, highPriority, savingsResult] =
+    const [totalImages, optimized, recommended, highPriority, failed, savingsResult, activeJobs] =
       await Promise.all([
-        prisma.image.count({ where: { shopId: shop.id } }),
+        prisma.image.count({ where: { shopId } }),
         prisma.image.count({
-          where: { shopId: shop.id, status: ImageStatus.OPTIMIZED },
+          where: { shopId, status: ImageStatus.OPTIMIZED },
         }),
         prisma.image.count({
-          where: { shopId: shop.id, status: ImageStatus.RECOMMENDED },
+          where: { shopId, status: ImageStatus.RECOMMENDED },
         }),
         prisma.image.count({
-          where: { shopId: shop.id, status: ImageStatus.HIGH_PRIORITY },
+          where: { shopId, status: ImageStatus.HIGH_PRIORITY },
+        }),
+        prisma.image.count({
+          where: { shopId, status: ImageStatus.FAILED },
         }),
         prisma.image.aggregate({
           where: {
-            shopId: shop.id,
+            shopId,
             potentialSavingsBytes: { not: null },
           },
           _sum: { potentialSavingsBytes: true },
+        }),
+        prisma.optimizationJob.findMany({
+          where: {
+            shopId,
+            status: { in: ["QUEUED", "PROCESSING"] },
+          },
+          select: {
+            id: true,
+            status: true,
+            imageId: true,
+            createdAt: true,
+          },
         }),
       ]);
 
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     const activeScanJob = await prisma.scanJob.findFirst({
       where: {
-        shopId: shop.id,
+        shopId,
         status: { in: ["QUEUED", "PROCESSING"] },
       },
       orderBy: { createdAt: "desc" },
@@ -62,6 +65,7 @@ export async function GET(request: NextRequest) {
       optimized,
       recommended,
       highPriority,
+      failed,
       totalSavingsBytes,
       activeScanJob: activeScanJob
         ? {
@@ -71,6 +75,7 @@ export async function GET(request: NextRequest) {
             total: activeScanJob.total,
           }
         : null,
+      activeOptimizationJobs: activeJobs.length,
     });
   } catch (error) {
     console.error("Stats error:", error);

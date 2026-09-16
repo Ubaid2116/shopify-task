@@ -134,4 +134,11 @@ describe("estimateOptimizedSize", () => {
     expect(result.savingsBytes).toBe(650000);
     expect(result.reductionPercent).toBe(65);
   });
+
+  it("handles large file sizes correctly", () => {
+    const result = estimateOptimizedSize("image/jpeg", 10 * 1024 * 1024); // 10MB
+    expect(result.estimatedBytes).toBe(6.5 * 1024 * 1024);
+    expect(result.savingsBytes).toBe(3.5 * 1024 * 1024);
+    expect(result.reductionPercent).toBe(35);
+  });
 });

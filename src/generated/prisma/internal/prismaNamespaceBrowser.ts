@@ -54,7 +54,8 @@ export const ModelName = {
   Shop: 'Shop',
   Image: 'Image',
   ScanJob: 'ScanJob',
-  OptimizationJob: 'OptimizationJob'
+  OptimizationJob: 'OptimizationJob',
+  OptimizationResult: 'OptimizationResult'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -144,6 +145,23 @@ export const OptimizationJobScalarFieldEnum = {
 } as const
 
 export type OptimizationJobScalarFieldEnum = (typeof OptimizationJobScalarFieldEnum)[keyof typeof OptimizationJobScalarFieldEnum]
+
+
+export const OptimizationResultScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  imageId: 'imageId',
+  optimizationJobId: 'optimizationJobId',
+  originalBytes: 'originalBytes',
+  optimizedBytes: 'optimizedBytes',
+  savingsBytes: 'savingsBytes',
+  reductionPercent: 'reductionPercent',
+  outputFormat: 'outputFormat',
+  optimizedPath: 'optimizedPath',
+  createdAt: 'createdAt'
+} as const
+
+export type OptimizationResultScalarFieldEnum = (typeof OptimizationResultScalarFieldEnum)[keyof typeof OptimizationResultScalarFieldEnum]
 
 
 export const SortOrder = {

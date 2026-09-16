@@ -400,7 +400,8 @@ export const ModelName = {
   Shop: 'Shop',
   Image: 'Image',
   ScanJob: 'ScanJob',
-  OptimizationJob: 'OptimizationJob'
+  OptimizationJob: 'OptimizationJob',
+  OptimizationResult: 'OptimizationResult'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -416,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shop" | "image" | "scanJob" | "optimizationJob"
+    modelProps: "shop" | "image" | "scanJob" | "optimizationJob" | "optimizationResult"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -716,6 +717,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    OptimizationResult: {
+      payload: Prisma.$OptimizationResultPayload<ExtArgs>
+      fields: Prisma.OptimizationResultFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OptimizationResultFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OptimizationResultFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        findFirst: {
+          args: Prisma.OptimizationResultFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OptimizationResultFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        findMany: {
+          args: Prisma.OptimizationResultFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>[]
+        }
+        create: {
+          args: Prisma.OptimizationResultCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        createMany: {
+          args: Prisma.OptimizationResultCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OptimizationResultCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>[]
+        }
+        delete: {
+          args: Prisma.OptimizationResultDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        update: {
+          args: Prisma.OptimizationResultUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        deleteMany: {
+          args: Prisma.OptimizationResultDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OptimizationResultUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OptimizationResultUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>[]
+        }
+        upsert: {
+          args: Prisma.OptimizationResultUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OptimizationResultPayload>
+        }
+        aggregate: {
+          args: Prisma.OptimizationResultAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOptimizationResult>
+        }
+        groupBy: {
+          args: Prisma.OptimizationResultGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OptimizationResultGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OptimizationResultCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OptimizationResultCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -826,6 +901,23 @@ export const OptimizationJobScalarFieldEnum = {
 } as const
 
 export type OptimizationJobScalarFieldEnum = (typeof OptimizationJobScalarFieldEnum)[keyof typeof OptimizationJobScalarFieldEnum]
+
+
+export const OptimizationResultScalarFieldEnum = {
+  id: 'id',
+  shopId: 'shopId',
+  imageId: 'imageId',
+  optimizationJobId: 'optimizationJobId',
+  originalBytes: 'originalBytes',
+  optimizedBytes: 'optimizedBytes',
+  savingsBytes: 'savingsBytes',
+  reductionPercent: 'reductionPercent',
+  outputFormat: 'outputFormat',
+  optimizedPath: 'optimizedPath',
+  createdAt: 'createdAt'
+} as const
+
+export type OptimizationResultScalarFieldEnum = (typeof OptimizationResultScalarFieldEnum)[keyof typeof OptimizationResultScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1110,6 +1202,7 @@ export type GlobalOmitConfig = {
   image?: Prisma.ImageOmit
   scanJob?: Prisma.ScanJobOmit
   optimizationJob?: Prisma.OptimizationJobOmit
+  optimizationResult?: Prisma.OptimizationResultOmit
 }
 
 /* Types for Logging */

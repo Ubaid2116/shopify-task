@@ -20,13 +20,13 @@ export default function RootLayout({
           content={process.env.SHOPIFY_API_KEY ?? ""}
         />
 
-        <Script
-          src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
-          strategy="beforeInteractive"
+        <link
+          rel="stylesheet"
+          href="https://cdn.shopify.com/shopifycloud/polaris-1.css"
         />
 
         <Script
-          src="https://cdn.shopify.com/shopifycloud/polaris-1.js"
+          src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
           strategy="beforeInteractive"
         />
       </head>

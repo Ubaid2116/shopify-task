@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ImageStatus {
+  OPTIMIZED
+  RECOMMENDED
+  HIGH_PRIORITY
+  FAILED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Shop {
+  id                   String   @id @default(cuid())
+  shopDomain           String   @unique
+  accessToken          String
+  refreshToken         String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  installedAt          DateTime @default(now())
+  uninstalledAt        DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  images               Image[]
+  scanJobs             ScanJob[]
+  optimizationJobs    OptimizationJob[]
+}
+
+model Image {
+  id       String @id @default(cuid())
+  shopId   String
+  shop     Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  shopifyProductId String
+  shopifyImageId   String
+
+  productName String
+  sourceUrl   String
+
+  width         Int?
+  height        Int?
+  format        String?
+  originalBytes BigInt?
+
+  estimatedOptimizedBytes BigInt?
+  potentialSavingsBytes   BigInt?
+  reductionPercent        Float?
+
+  status ImageStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  optimizationJobs OptimizationJob[]
+
+  @@unique([shopId, shopifyImageId])
+  @@index([shopId])
+  @@index([shopId, status])
+}
+
+model ScanJob {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  status    JobStatus
+  scanned  Int @default(0)
+  total    Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  error       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId, status])
+}
+
+model OptimizationJob {
+  id      String @id @default(cuid())
+  shopId  String
+  imageId String
+
+  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  status   JobStatus
+  attempts Int @default(0)
+  error    String?
+
+  originalBytes    BigInt?
+  optimizedBytes   BigInt?
+  savingsBytes     BigInt?
+  reductionPercent Float?
+
+  optimizedPath String?
+
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@unique([shopId, imageId])
+  @@index([shopId, status])
+}

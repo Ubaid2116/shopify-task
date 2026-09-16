@@ -1,0 +1,23 @@
+client_id = "9aa2abd725741db749ec3a2dde732813"
+name = "StoreBoost Pro"
+
+application_url = "https://example.com"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,write_products"
+optional_scopes = []
+use_legacy_install_flow = true
+
+[auth]
+redirect_urls = []
+
+[webhooks]
+api_version = "2026-07"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/api/webhooks/app/uninstalled"
+
+[build]
+automatically_update_urls_on_dev = true

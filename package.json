@@ -14,8 +14,6 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@shopify/app-bridge-react": "^4.2.13",
-    "@shopify/shopify-api": "^14.0.1",
     "bullmq": "^6.3.6",
     "dotenv": "^17.4.2",
     "ioredis": "^6.0.0",

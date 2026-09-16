@@ -66,6 +66,18 @@ export async function POST(request: NextRequest) {
         const { estimatedBytes, savingsBytes, reductionPercent } =
           estimateOptimizedSize(format, size);
 
+        const existingImage = await prisma.image.findUnique({
+          where: {
+            shopId_shopifyImageId: {
+              shopId: shop.id,
+              shopifyImageId: img.shopifyImageId,
+            },
+          },
+          select: { status: true },
+        });
+
+        const newStatus = existingImage?.status === "OPTIMIZED" ? "OPTIMIZED" : status;
+
         await prisma.image.upsert({
           where: {
             shopId_shopifyImageId: {
@@ -102,7 +114,7 @@ export async function POST(request: NextRequest) {
               : null,
             potentialSavingsBytes: savingsBytes ? BigInt(savingsBytes) : null,
             reductionPercent,
-            status,
+            status: newStatus,
           },
         });
 

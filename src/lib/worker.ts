@@ -1,3 +1,7 @@
+import { config } from "dotenv";
+import { resolve } from "path";
+config({ path: resolve(__dirname, "../../.env.local") });
+
 import { Job } from "bullmq";
 import { prisma } from "./prisma";
 import { createWorker, QueueJobData } from "./queue";
